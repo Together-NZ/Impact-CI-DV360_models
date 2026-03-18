@@ -69,5 +69,5 @@ SELECT
 FROM
     parsed_data
 WHERE
-    row_num = 1 and lower(campaign_name) like '%' || {{ plan_code }} || '%'
+    row_num = 1 and lower(campaign_name) like '%' || '{{ plan_code }}' || '%'
 {% endmacro %}
