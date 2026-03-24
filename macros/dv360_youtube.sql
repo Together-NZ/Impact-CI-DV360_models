@@ -26,6 +26,7 @@ WITH parsed_data AS (
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
                 JSON_VALUE(data, "$.YouTube Ad ID")
+                JSON_VALUE(data, "$.YouTube Ad Group Ad ID")
                 --safe_cast(TRUNC(SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") AS FLOAT64))as int64)
             ORDER BY 
                 JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") DESC -- Keep the record with the highest revenue
