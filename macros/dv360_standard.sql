@@ -24,7 +24,7 @@ WITH dedupllicate_data AS (
         JSON_VALUE(data, "$.Post-View Conversions") AS post_view_conversions,
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") AS FLOAT64)AS media_cost,
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Third-Quartile Views (Video)']") AS INT64) AS video_75_completion,
-        JSON_VALUE(data, "$.Total Conversions") AS conversions,
+        SAFE_CAST(JSON_VALUE(data, "$.Total Conversions") AS FLOAT64) AS conversions,
         ROW_NUMBER() OVER (
             PARTITION BY 
                 FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
