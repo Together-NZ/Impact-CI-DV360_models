@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "title": "dv360-query",
+    "dataRange": {
+      "range": "CUSTOM_DATES",
+      "customStartDate": {
+        "year": "{start_year}",
+        "month": "{start_month}",
+        "day": "{start_day}"
+      },
+      "customEndDate": {
+        "year": "{end_year}",
+        "month": "{end_month}",
+        "day": "{end_day}"
+      }
+    },
+    "format": "CSV"
+  },
+  "params": {
+    "type":"YOUTUBE",
+    "groupBys": ["FILTER_ADVERTISER","FILTER_DATE","FILTER_TRUEVIEW_AD_GROUP_AD_ID","FILTER_TRUEVIEW_AD","FILTER_ADVERTISER_CURRENCY","FILTER_INSERTION_ORDER_NAME","FILTER_INSERTION_ORDER","FILTER_INSERTION_ORDER_STATUS","FILTER_TRUEVIEW_AD_GROUP","FILTER_TRUEVIEW_AD_GROUP_ID","FILTER_LINE_ITEM_NAME","FILTER_LINE_ITEM"],
+    "filters" : "{filters}",
+    "metrics": ["METRIC_CLICKS","METRIC_IMPRESSIONS","METRIC_RICH_MEDIA_VIDEO_FIRST_QUARTILE_COMPLETES","METRIC_RICH_MEDIA_VIDEO_MIDPOINTS",
+                "METRIC_RICH_MEDIA_VIDEO_THIRD_QUARTILE_COMPLETES","METRIC_RICH_MEDIA_VIDEO_COMPLETIONS","METRIC_REVENUE_ADVERTISER","METRIC_TRUEVIEW_VIEWS"]
+},
+
+"schedule": {"frequency": "ONE_TIME"}
+}
+
+

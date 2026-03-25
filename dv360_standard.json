@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "title": "dv360-query",
+    "dataRange": {
+      "range": "CUSTOM_DATES",
+      "customStartDate": {
+        "year": "{start_year}",
+        "month": "{start_month}",
+        "day": "{start_day}"
+      },
+      "customEndDate": {
+        "year": "{end_year}",
+        "month": "{end_month}",
+        "day": "{end_day}"
+      }
+    },
+    "format": "CSV"
+  },
+  "params": {
+      "type":"STANDARD",
+      "groupBys": ["FILTER_DATE","FILTER_CREATIVE","FILTER_ADVERTISER_CURRENCY","FILTER_INSERTION_ORDER_NAME","FILTER_INSERTION_ORDER","FILTER_INSERTION_ORDER_STATUS","FILTER_LINE_ITEM_NAME","FILTER_LINE_ITEM",
+                   "FILTER_FLOODLIGHT_ACTIVITY","FILTER_FLOODLIGHT_ACTIVITY_ID"],
+      "filters" : "{filters}",
+      "metrics": ["METRIC_CLICKS","METRIC_LAST_CLICKS","METRIC_IMPRESSIONS","METRIC_LAST_IMPRESSIONS","METRIC_TOTAL_CONVERSIONS","METRIC_RICH_MEDIA_VIDEO_FIRST_QUARTILE_COMPLETES","METRIC_RICH_MEDIA_VIDEO_MIDPOINTS",
+                  "METRIC_RICH_MEDIA_VIDEO_THIRD_QUARTILE_COMPLETES","METRIC_RICH_MEDIA_VIDEO_COMPLETIONS","METRIC_REVENUE_ADVERTISER","METRIC_CM360_POST_CLICK_REVENUE","METRIC_CM360_POST_VIEW_REVENUE","METRIC_RICH_MEDIA_VIDEO_PLAYS"]
+
+  },
+
+"schedule": {"frequency": "ONE_TIME"}
+}
+
