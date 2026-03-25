@@ -17,21 +17,23 @@ WITH dedupllicate_data AS (
         JSON_VALUE(data, "$.Insertion Order ID") AS campaign_id,
         JSON_VALUE(data, "$.Insertion Order Status") AS campaign_status,
         JSON_VALUE(data, "$.Line Item") AS line_item,
+        _sdc_extracted_at,
         JSON_VALUE(data, "$.Line Item ID") AS line_item_id,
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Midpoint Views (Video)']") AS INT64) AS video_50_completion,
         JSON_VALUE(data, "$.Post-Click Conversions") AS post_click_conversions,
         JSON_VALUE(data, "$.Post-View Conversions") AS post_view_conversions,
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") AS FLOAT64)AS media_cost,
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Third-Quartile Views (Video)']") AS INT64) AS video_75_completion,
-        JSON_VALUE(data, "$.Total Conversions") AS total_conversions,
+        JSON_VALUE(data, "$.Total Conversions") AS conversions,
         ROW_NUMBER() OVER (
             PARTITION BY 
                 FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
-                JSON_VALUE(data, "$.Creative")
+                JSON_VALUE(data, "$.Creative"),
+                JSON_VALUE(data, "$.Floodlight Activity ID")
             ORDER BY 
-                CAST(JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") AS FLOAT64) DESC -- Keep the record with the highest revenue
+                _sdc_extracted_at DESC -- Keep the record with the highest revenue
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}

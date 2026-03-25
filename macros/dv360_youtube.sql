@@ -29,7 +29,7 @@ WITH parsed_data AS (
                 JSON_VALUE(data, "$.YouTube Ad Group Ad ID")
                 --safe_cast(TRUNC(SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") AS FLOAT64))as int64)
             ORDER BY 
-                JSON_EXTRACT_SCALAR(data, "$['Revenue (Adv Currency)']") DESC -- Keep the record with the highest revenue
+                _sdc_extracted_at DESC -- Keep the record with the highest revenue
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}
