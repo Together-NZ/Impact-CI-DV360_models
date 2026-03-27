@@ -1,4 +1,4 @@
-{% macro dv360_youtube(source_name, table_name,plan_code,dv360_standard_name) %}
+{% macro dv360_youtube(source_name, table_name,plan_code) %}
 WITH parsed_data AS (
     SELECT
         -- select the dv360 true view data
@@ -33,9 +33,6 @@ WITH parsed_data AS (
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}
-),
-youtube_conversion AS (
-    SELECT campaign_name,conversions,date FROM {{ ref(dv360_standard_name) }} WHERE LOWER(campaign_name) LIKE '%yt%'
 ),
 youtube_basic_metrics AS (
 
@@ -78,8 +75,5 @@ youtube_conversion_ranking AS (
     FROM youtube_basic_metrics 
    
 )
-SELECT yt_rank.*,yt_conv.conversions FROM youtube_conversion_ranking AS yt_rank LEFT JOIN 
-youtube_conversion AS yt_conv 
-ON TRIM(LOWER(yt_conv.campaign_name)) = TRIM(LOWER(yt_rank.campaign_name)) AND yt_rank.conversion_rank = 1
-AND yt_rank.date = yt_conv.date
+SELECT * FROM youtube_basic_metrics 
 {% endmacro %}
