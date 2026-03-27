@@ -33,7 +33,11 @@ WITH parsed_data AS (
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}
-)
+),
+youtube_conversion AS (
+    SELECT campaign_name,conversions,date FROM {{ ref('dv360_standard') }} WHERE LOWER(campaign_name) LIKE '%yt%'
+),
+youtube_basic_metrics AS (
 
 SELECT
     advertiser_currency,
@@ -68,5 +72,14 @@ SELECT
 FROM
     parsed_data
 WHERE
-    row_num = 1 and lower(campaign_name) like '%' || '{{ plan_code }}' || '%'
+    row_num = 1 and lower(campaign_name) like '%' || '{{ plan_code }}' || '%'),
+youtube_conversion_ranking AS (
+    SELECT * , ROW_NUMBER() OVER (PARTITION BY campaign_name,date ORDER BY conversions DESC) AS conversion_rank 
+    FROM youtube_basic_metrics 
+   
+)
+SELECT yt_rank.*,yt_conv.conversions FROM youtube_conversion_ranking AS yt_rank LEFT JOIN 
+youtube_conversion AS yt_conv 
+ON TRIM(LOWER(yt_conv.campaign_name)) = TRIM(LOWER(yt_rank.campaign_name)) AND yt_rank.conversion_rank = 1
+AND yt_rank.date = yt_conv.date
 {% endmacro %}
