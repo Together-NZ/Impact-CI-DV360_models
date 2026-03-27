@@ -1,4 +1,4 @@
-{% macro dv360_youtube(source_name, table_name,plan_code) %}
+{% macro dv360_youtube(source_name, table_name,plan_code,dv360_standard_name) %}
 WITH parsed_data AS (
     SELECT
         -- select the dv360 true view data
@@ -35,7 +35,7 @@ WITH parsed_data AS (
         {{ source(source_name, table_name) }}
 ),
 youtube_conversion AS (
-    SELECT campaign_name,conversions,date FROM {{ ref('dv360_standard') }} WHERE LOWER(campaign_name) LIKE '%yt%'
+    SELECT campaign_name,conversions,date FROM {{ ref(dv360_standard_name) }} WHERE LOWER(campaign_name) LIKE '%yt%'
 ),
 youtube_basic_metrics AS (
 
