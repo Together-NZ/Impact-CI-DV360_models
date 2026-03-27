@@ -68,6 +68,6 @@ SELECT * ,
 FROM dedupllicate_data 
 WHERE row_num = 1)
 SELECT f.* 
-from final f WHERE LOWER(campaign_name) not like '%yt%'
+from final f 
 
 {% endmacro %}
