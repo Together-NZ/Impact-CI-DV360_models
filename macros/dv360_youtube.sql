@@ -1,4 +1,4 @@
-{% macro dv360_youtube(source_name, table_name,plan_code) %}
+{% macro dv360_youtube(source_name, table_name,plan_code,dv360_standard_name) %}
 WITH parsed_data AS (
     SELECT
         -- select the dv360 true view data
@@ -71,9 +71,9 @@ FROM
 WHERE
     row_num = 1 and lower(campaign_name) like '%' || '{{ plan_code }}' || '%'),
 youtube_conversion_ranking AS (
-    SELECT * , ROW_NUMBER() OVER (PARTITION BY campaign_name,date ORDER BY conversions DESC) AS conversion_rank 
+    SELECT * , ROW_NUMBER() OVER (PARTITION BY campaign_name,date ORDER BY creative_name DESC) AS conversion_rank 
     FROM youtube_basic_metrics 
    
 )
-SELECT * FROM youtube_basic_metrics 
+select * from youtube_basic_metrics 
 {% endmacro %}
