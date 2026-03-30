@@ -1,4 +1,9 @@
 {% macro dv360_youtube(source_name, table_name,plan_code,dv360_standard_name) %}
+-- This transformation rule joins conversion data for youtube camapign in campaign gandularity with rest of the metrics that 
+-- are in creative granularity, it shares the same schema for both, and for conversion data, creative will be markes as 
+-- 'YouTube conversion does not have creative breakdown', and the other metrics like media_cost,impression and clicks will be set to 0 for rows of data
+-- that has conversion for youtube campaign, so when doing aggregration on clicks,impressions, and media_cost and conversions on campaign breakdown, the number
+-- will not inflated.
 WITH parsed_data AS (
     SELECT
         -- select the dv360 true view data
@@ -32,8 +37,7 @@ WITH parsed_data AS (
                 _sdc_extracted_at DESC -- Keep the record with the highest revenue
         ) AS row_num
     FROM
-        {{ source(source_name, table_name) }}
-),
+        {{ source(source_name, table_name) }}),
 youtube_basic_metrics AS (
 
 SELECT
@@ -64,16 +68,49 @@ SELECT
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(5)] ELSE 'Other' END AS ad_format_detail,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(6)] ELSE 'Other' END AS ad_format,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
-    ELSE SPLIT(campaign_name,'_')[OFFSET(1)] END AS campaign_descr
+    ELSE SPLIT(campaign_name,'_')[OFFSET(1)] END AS campaign_descr,
+    null as conversions,
+    CAST(null AS STRING) as floodlight_activity,
+    CAST(null AS STRING) as floodlight_activity_id
    
 FROM
     parsed_data
 WHERE
     row_num = 1 and lower(campaign_name) like '%' || '{{ plan_code }}' || '%'),
-youtube_conversion_ranking AS (
-    SELECT * , ROW_NUMBER() OVER (PARTITION BY campaign_name,date ORDER BY creative_name DESC) AS conversion_rank 
-    FROM youtube_basic_metrics 
-   
+youtube_conversion AS (
+    SELECT * FROM {{ref(dv360_standard_name)}} WHERE campaign_name IN (
+        SELECT DISTINCT campaign_name FROM parsed_data)
+),
+conversion_joining AS (
+    SELECT advertiser_currency,
+    0 as clicks,
+    0 as video_completion,
+    date,
+    0 as video_25_completion,
+    0 as impressions,
+    campaign_name,
+    campaign_id,
+    campaign_status,
+    line_item,
+    line_item_id,
+    0 as midpoint_views_video,
+    0 as media_cost,
+    0 as third_quartile_views_video,
+    'YouTube conversion does not have creative breakdown' AS creative_name,
+    '' AS youtube_ad_group,
+    '' AS youtube_ad_group_id,
+    publisher,
+    media_format,
+    audience_name,
+    '' AS creative_descr,
+    '' AS ad_format_detail,
+    '' AS ad_format,
+    campaign_descr,
+    conversions as conversions,
+    SAFE_CAST(floodlight_activity_name AS STRING) as floodlight_activity,
+    SAFE_CAST(floodlight_activity_id AS STRING) AS floodlight_activity_id
+    FROM youtube_conversion
 )
-select * from youtube_basic_metrics 
+SELECT * from youtube_basic_metrics UNION ALL
+SELECT * FROM conversion_joining
 {% endmacro %}
