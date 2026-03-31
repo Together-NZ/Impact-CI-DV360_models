@@ -59,7 +59,7 @@ SELECT * ,
     END AS publisher,
     CASE WHEN ARRAY_LENGTH(SPLIT(line_item, '_')) <8 THEN 'Other'
     ELSE SPLIT(line_item, '_')[OFFSET(7)] END AS audience_name,
-    CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 THEN 'Other' ELSE SPLIT(creative_name, '_')[OFFSET(7)] END AS creative_descr,
+    SPLIT(creative_name, '_')[OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-1)] AS creative_descr,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(5)] ELSE 'Other' END AS ad_format_detail,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(6)] ELSE 'Other' END AS ad_format,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
