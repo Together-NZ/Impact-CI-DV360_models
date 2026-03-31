@@ -1,4 +1,4 @@
-{% macro dv360_youtube(source_name, table_name,plan_code,dv360_standard_name) %}
+{% macro dv360_youtube(source_name, table_name,dv360_standard_name) %}
 -- This transformation rule joins conversion data for youtube camapign in campaign gandularity with rest of the metrics that 
 -- are in creative granularity, it shares the same schema for both, and for conversion data, creative will be markes as 
 -- 'YouTube conversion does not have creative breakdown', and the other metrics like media_cost,impression and clicks will be set to 0 for rows of data
@@ -76,7 +76,9 @@ SELECT
 FROM
     parsed_data
 WHERE
-    row_num = 1 and lower(campaign_name) like '%' || '{{ plan_code }}' || '%'),
+    row_num = 1 and campaign_name in (
+        SELECT DISTINCT campaign_name FROM {{ref(dv360_standard_name)}}
+    )),
 youtube_conversion AS (
     SELECT * FROM {{ref(dv360_standard_name)}} WHERE campaign_name IN (
         SELECT DISTINCT campaign_name FROM parsed_data)
