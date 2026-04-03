@@ -40,8 +40,9 @@ WITH dedupllicate_data AS (
 ),final AS (
 SELECT * ,
     CASE 
-        WHEN SPLIT(campaign_name, '_')[OFFSET(3)] LIKE '%YT%' THEN 'Youtube Video'
-        ELSE SPLIT(campaign_name, '_')[OFFSET(3)]
+        WHEN ARRAY_LENGTH(SPLIT(campaign_name, '_')) >= 3 AND SPLIT(campaign_name, '_')[OFFSET(3)] LIKE '%YT%' THEN 'Youtube Video'
+        WHEN ARRRY_LENGTH(SPLIT(campaign_name,'_')) >= 3 THEN SPLIT(campaign_name, '_')[OFFSET(3)]
+        ELSE 'Other'
     END AS media_format,
     CASE 
         WHEN LOWER(campaign_name) LIKE '%nzme%' OR LOWER(creative_name) LIKE '%nzme%' THEN 'Nzme'
