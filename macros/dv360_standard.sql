@@ -58,8 +58,7 @@ SELECT * ,
         WHEN LOWER(campaign_name) LIKE '%stuff%' OR LOWER(creative_name) LIKE '%stuff%' THEN 'Stuff'
         ELSE 'Dv360'
     END AS publisher,
-    CASE WHEN ARRAY_LENGTH(SPLIT(line_item, '_')) <8 THEN 'Other'
-    ELSE SPLIT(line_item, '_')[OFFSET(7)] END AS audience_name,
+    SPLIT(line_item, '_')[OFFSET(ARRAY_LENGTH(SPLIT(line_item, '_'))-1)] AS audience_name,
     SPLIT(creative_name, '_')[OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-1)] AS creative_descr,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(5)] ELSE 'Other' END AS ad_format_detail,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(6)] ELSE 'Other' END AS ad_format,
