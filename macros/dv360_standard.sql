@@ -61,7 +61,8 @@ SELECT * ,
     SPLIT(line_item, '_')[OFFSET(ARRAY_LENGTH(SPLIT(line_item, '_'))-1)] AS audience_name,
     SPLIT(creative_name, '_')[OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-1)] AS creative_descr,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(5)] ELSE 'Other' END AS ad_format_detail,
-    CASE WHEN ARRAY_LENGTH(SPLIT(creative_name,'_'))>=8 THEN SPLIT(creative_name, '_')[OFFSET(6)] ELSE 'Other' END AS ad_format,
+    
+    SPLIT(creative_name,'_')[OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-2)] AS ad_format,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
     ELSE SPLIT(campaign_name,'_')[OFFSET(1)] END AS campaign_descr
 
