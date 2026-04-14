@@ -38,6 +38,13 @@ WITH parsed_data AS (
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}),
+campaign_name_matching AS (
+    SELECT DISTINCT campaign_name,campaign_id FROM {{ref(dv360_standard_name)}}
+),
+campaign_name_update AS (
+    SELECT s.* EXCEPT(campaign_name),naming_matching.campaign_name FROM parsed_data AS s
+    LEFT JOIN campaign_name_matching AS naming_matching ON s.campaign_id=naming_matching.campaign_id
+),
 youtube_basic_metrics AS (
 
 SELECT
@@ -85,14 +92,14 @@ SELECT
     CAST(null AS STRING) as floodlight_activity_id
    
 FROM
-    parsed_data
+    campaign_name_update
 WHERE
     row_num = 1 and campaign_name in (
         SELECT DISTINCT campaign_name FROM {{ref(dv360_standard_name)}}
     )),
 youtube_conversion AS (
     SELECT * FROM {{ref(dv360_standard_name)}} WHERE campaign_name IN (
-        SELECT DISTINCT campaign_name FROM parsed_data)
+        SELECT DISTINCT campaign_name FROM campaign_name_update)
 ),
 conversion_joining AS (
     SELECT advertiser_currency,

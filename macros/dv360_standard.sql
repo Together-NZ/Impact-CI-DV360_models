@@ -37,8 +37,21 @@ WITH dedupllicate_data AS (
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}
-),final AS (
-SELECT * ,
+),
+campaign_name_update AS (
+   SELECT campaign_name, campaign_id, ROW_NUMBER() OVER (
+    PARTITION BY campaign_id ORDER BY _sdc_extracted_at DESC
+   ) AS row_num
+   FROM dedupllicate_data
+),
+campaign_name_update_clean AS (
+    SELECT campaign_name,campaign_id FROM campaign_name_update 
+    WHERE row_num = 1
+),
+
+
+final_campaign_id AS (
+SELECT *except(campaign_name) ,
     CASE 
         WHEN ARRAY_LENGTH(SPLIT(campaign_name, '_')) >= 3 AND SPLIT(campaign_name, '_')[OFFSET(3)] LIKE '%YT%' THEN 'Youtube Video'
         WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) >= 3 THEN SPLIT(campaign_name, '_')[OFFSET(3)]
@@ -77,12 +90,10 @@ SELECT * ,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
         ELSE SPLIT(campaign_name,'_')[SAFE_OFFSET(1)] END AS campaign_descr,
 
-FROM dedupllicate_data 
+FROM dedupllicate_data  
 WHERE row_num = 1)
-
-
-
-SELECT f.* 
-from final f 
+SELECT campaign_id.*, campaign_name FROM 
+final_campaign_id AS campaign_id LEFT JOIN 
+campaign_name_update_clean ON campaign_id.campaign_id=campaign_name_update_clean.campaign_id
 
 {% endmacro %}
