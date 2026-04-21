@@ -66,7 +66,11 @@ SELECT
     youtube_ad_group,
     youtube_ad_group_id,
     --REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
-    'YouTube' AS publisher,
+    CASE WHEN LOWER(campaign_name) LIKE '%dg%' OR
+    LOWER(campaign_name) LIKE '%demand gen%' THEN 'Demand Gen'
+    WHEN LOWER(campaign_name) LIKE '%youtube%' OR LOWER(creative_name) LIKE '%yt%' or lower(creative_name) LIKE '%yt%' or   LOWER(campaign_name) LIKE '%yt%' THEN 'YouTube'
+    ELSE 'Dv360'
+    END AS publisher,
     'Youtube Video' AS media_format,
 
     CASE WHEN ARRAY_LENGTH(SPLIT(line_item, '_')) < 8 AND ARRAY_LENGTH(SPLIT(line_item, '_')) > 1  
