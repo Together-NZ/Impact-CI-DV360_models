@@ -73,10 +73,7 @@ SELECT
     END AS publisher,
     'Youtube Video' AS media_format,
 
-    CASE WHEN ARRAY_LENGTH(SPLIT(line_item, '_')) < 8 AND ARRAY_LENGTH(SPLIT(line_item, '_')) > 1  
-         THEN SPLIT(line_item, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(line_item, '_'))-1)] 
-         WHEN ARRAY_LENGTH(SPLIT(line_item, '_')) >= 8 THEN SPLIT(line_item, '_')[SAFE_OFFSET(7)] 
-         ELSE 'Other' END AS audience_name,
+    REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
          THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-1)] 
          WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(7)] 
