@@ -1,4 +1,4 @@
-{% macro dv360_youtube(source_name, table_name,dv360_standard_name) %}
+{% macro dv360_youtube(source_name, table_name,dv360_standard_name,cm360_source_name,cm360_table_name) %}
 -- This transformation rule joins conversion data for youtube camapign in campaign gandularity with rest of the metrics that 
 -- are in creative granularity, it shares the same schema for both, and for conversion data, creative will be markes as 
 -- 'YouTube conversion does not have creative breakdown', and the other metrics like media_cost,impression and clicks will be set to 0 for rows of data
@@ -39,11 +39,27 @@ WITH parsed_data AS (
     FROM
         {{ source(source_name, table_name) }}),
 campaign_name_matching AS (
-    SELECT DISTINCT campaign_name,campaign_id FROM {{ref(dv360_standard_name)}}
+    SELECT DISTINCT campaign_name,campaign_id,creative_name FROM {{ref(dv360_standard_name)}}
 ),
 campaign_name_update AS (
     SELECT s.* EXCEPT(campaign_name),naming_matching.campaign_name FROM parsed_data AS s
     LEFT JOIN campaign_name_matching AS naming_matching ON s.campaign_id=naming_matching.campaign_id
+),
+cm360_campaign_creative AS (
+                SELECT DISTINCT placement AS cm360_campaign_name,
+                creative_name AS cm360_creative_name FROM {{ source(cm360_source_name, cm360_table_name) }}
+
+),
+creative_name_joining AS (
+    SELECT source.*,cm360_creative_name
+    FROM campaign_name_update AS source LEFT JOIN cm360_campaign_creative AS reference ON
+    source.campaign_name = reference.cm360_campaign_name
+),
+update_creative_name AS (
+    SELECT * EXCEPT(creative_name),
+    CASE WHEN cm360_creative_name IS NOT NULL
+    THEN cm360_creative_name ELSE creative_name END AS creative_name
+    FROM creative_name_joining
 ),
 youtube_basic_metrics AS (
 
@@ -93,7 +109,7 @@ SELECT
     CAST(null AS STRING) as floodlight_activity_id
    
 FROM
-    campaign_name_update
+    update_creative_name
 WHERE
     row_num = 1 and campaign_name in (
         SELECT DISTINCT campaign_name FROM {{ref(dv360_standard_name)}}

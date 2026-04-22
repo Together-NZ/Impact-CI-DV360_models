@@ -1,4 +1,4 @@
-{% macro dv360_standard(source_name, table_name) %}
+{% macro dv360_standard(source_name, table_name,cm360_source_name,cm360_table_name) %}
 WITH dedupllicate_data AS (
     SELECT
         -- select dv360 standard data
@@ -36,8 +36,7 @@ WITH dedupllicate_data AS (
                 _sdc_extracted_at DESC -- Keep the record with the highest revenue
         ) AS row_num
     FROM
-        {{ source(source_name, table_name) }}
-),
+        {{ source(source_name, table_name) }}),
 campaign_name_update AS (
    SELECT campaign_name, campaign_id, ROW_NUMBER() OVER (
     PARTITION BY campaign_id ORDER BY _sdc_extracted_at DESC
@@ -57,7 +56,27 @@ SELECT *except(campaign_name) ,
         WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) >= 3 THEN SPLIT(campaign_name, '_')[OFFSET(3)]
         ELSE 'Other'
     END AS media_format,
-    CASE 
+
+FROM dedupllicate_data  
+WHERE row_num = 1),
+no_creative_changed AS (
+SELECT campaign_id.*, campaign_name FROM 
+final_campaign_id AS campaign_id LEFT JOIN 
+campaign_name_update_clean ON campaign_id.campaign_id=campaign_name_update_clean.campaign_id
+),
+cm360_campaign_creative AS (
+  SELECT DISTINCT placement AS cm360_campaign_name,creative_name AS cm360_creative_name from {{ source(cm360_source_name, cm360_table_name) }}
+),
+joining AS (
+  SELECT source.*, cm360_creative_name
+  FROM no_creative_changed AS source LEFT JOIN cm360_campaign_creative AS reference ON
+  source.campaign_name = reference.cm360_campaign_name
+),
+basic_result AS (
+SELECT * except(creative_name,cm360_creative_name),
+CASE WHEN cm360_creative_name IS NOT NULL
+THEN cm360_creative_name ELSE creative_name END AS creative_name FROM joining)
+SELECT *,    CASE 
         WHEN LOWER(campaign_name) LIKE '%nzme%' OR LOWER(creative_name) LIKE '%nzme%' THEN 'Nzme'
         WHEN LOWER(campaign_name) LIKE '%dg%' OR LOWER(campaign_name) LIKE '%demand gen%' THEN 'Demand Gen'
         WHEN LOWER(campaign_name) LIKE '%3now%' OR LOWER(campaign_name) LIKE '%three%'  OR LOWER(creative_name) LIKE '%3now%' OR LOWER(creative_name) LIKE '%three%' THEN 'Threenow'
@@ -86,12 +105,6 @@ SELECT *except(campaign_name) ,
          THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-2)] 
          ELSE 'Other' END AS ad_format,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
-        ELSE SPLIT(campaign_name,'_')[SAFE_OFFSET(1)] END AS campaign_descr,
-
-FROM dedupllicate_data  
-WHERE row_num = 1)
-SELECT campaign_id.*, campaign_name FROM 
-final_campaign_id AS campaign_id LEFT JOIN 
-campaign_name_update_clean ON campaign_id.campaign_id=campaign_name_update_clean.campaign_id
+        ELSE SPLIT(campaign_name,'_')[SAFE_OFFSET(1)] END AS campaign_descr FROM basic_result
 
 {% endmacro %}
