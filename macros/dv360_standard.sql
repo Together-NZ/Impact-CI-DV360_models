@@ -78,7 +78,8 @@ CASE WHEN cm360_creative_name IS NOT NULL
 THEN cm360_creative_name ELSE creative_name END AS creative_name FROM joining)
 SELECT *,    CASE 
         WHEN LOWER(campaign_name) LIKE '%nzme%' OR LOWER(creative_name) LIKE '%nzme%' THEN 'Nzme'
-        WHEN LOWER(campaign_name) LIKE '%dg%' OR LOWER(campaign_name) LIKE '%demand gen%' THEN 'Demand Gen'
+        WHEN LOWER(campaign_name) LIKE '%dg%' OR LOWER(campaign_name) LIKE '%demand gen%' OR (LOWER(campaign_name) LIKE '%demand%' 
+        AND LOWER(campaign_name) LIKE '%gen%') THEN 'Demand Gen'
         WHEN LOWER(campaign_name) LIKE '%3now%' OR LOWER(campaign_name) LIKE '%three%'  OR LOWER(creative_name) LIKE '%3now%' OR LOWER(creative_name) LIKE '%three%' THEN 'Threenow'
         WHEN LOWER(campaign_name) LIKE '%youtube%' OR LOWER(creative_name) LIKE '%yt%' or lower(creative_name) LIKE '%yt%' or   LOWER(campaign_name) LIKE '%yt%' THEN 'Youtube'
         WHEN LOWER(campaign_name) LIKE '%TVNZ%' OR LOWER(creative_name) LIKE '%TVNZ%' or lower(creative_name) LIKE '%tvnz%' or   LOWER(campaign_name) LIKE '%tvnz%' THEN 'TVNZ'
