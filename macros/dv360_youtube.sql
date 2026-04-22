@@ -84,7 +84,7 @@ SELECT
     --REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
     CASE WHEN LOWER(campaign_name) LIKE '%dg%' OR
     LOWER(campaign_name) LIKE '%demand gen%'  OR (LOWER(campaign_name) LIKE '%demand%' 
-    AND LOWER(campaign_name) LIKE '%gen%')) THEN 'Demand Gen'
+    AND LOWER(campaign_name) LIKE '%gen%') THEN 'Demand Gen'
     WHEN LOWER(campaign_name) LIKE '%youtube%' OR LOWER(creative_name) LIKE '%yt%' or lower(creative_name) LIKE '%yt%' or   LOWER(campaign_name) LIKE '%yt%' THEN 'YouTube'
     ELSE 'Dv360'
     END AS publisher,
