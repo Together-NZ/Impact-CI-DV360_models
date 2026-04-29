@@ -32,6 +32,7 @@ WITH deduplicate_data AS (
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
                 JSON_VALUE(data, "$.Creative ID"),
+                JSON_VALUE(data, "$.Creative"),
                 JSON_VALUE(data, "$.Floodlight Activity ID")
             ORDER BY 
                 _sdc_extracted_at DESC -- Keep the record with the highest revenue
