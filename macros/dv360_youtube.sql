@@ -25,6 +25,7 @@ WITH parsed_data AS (
         JSON_VALUE(data, "$.YouTube Ad ID") AS creative_id,
         JSON_VALUE(data, "$.YouTube Ad Group") AS youtube_ad_group,
         JSON_VALUE(data, "$.YouTube Ad Group ID") AS youtube_ad_group_id,
+        _sdc_extracted_at,
         ROW_NUMBER() OVER (
             PARTITION BY 
                 FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
@@ -46,7 +47,7 @@ campaign_name_update AS (
     LEFT JOIN campaign_name_matching AS naming_matching ON s.campaign_id=naming_matching.campaign_id
 ),
 creative_name_matching AS (
-    SELECT creative_name,creative_id. ROW_NUMBER() OVER (PARTITION BY _sdc_extracted_at DESC) AS row_num FROM parsed_data
+    SELECT creative_name,creative_id, ROW_NUMBER() OVER (PARTITION BY creative_id ORDER BY _sdc_extracted_at DESC) AS row_num FROM parsed_data
 ),
 creative_name_update_clean AS (
     SELECT creative_name,creative_id FROM creative_name_matching

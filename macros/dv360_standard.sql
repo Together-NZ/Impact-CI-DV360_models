@@ -38,14 +38,14 @@ WITH deduplicate_data AS (
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}),
-creative_name_update AS (
-    SELECT creative_name,creative_id ROW_NUMBER() OVER (
-        PARTITION BY _sdc_extracted_at DESC
+creative_name_update1 AS (
+    SELECT creative_name,creative_id,ROW_NUMBER() OVER (
+        PARTITION BY creative_id ORDER BY _sdc_extracted_at DESC
     ) AS row_num
     FROM deduplicate_data
 ),
 creative_name_update_clean AS (
-    SELECT creative_name,creative_id FROM creative_name_update
+    SELECT creative_name,creative_id FROM creative_name_update1
     WHERE row_num = 1
 ),
 campaign_name_update AS (
@@ -76,7 +76,7 @@ final_campaign_id AS campaign_id LEFT JOIN
 campaign_name_update_clean ON campaign_id.campaign_id=campaign_name_update_clean.campaign_id
 ),
 creative_name_update AS (
-    SELECT reference.*, creative,creative_name FROM no_creative_changed AS reference LEFT JOIN creative_name_update_clean ON reference.creative_id=creative_name_update_clean.creative_id
+    SELECT reference.* EXCEPT(creative_name),creative_name_update_clean.creative_name FROM no_creative_changed AS reference LEFT JOIN creative_name_update_clean ON reference.creative_id=creative_name_update_clean.creative_id
 ),
 cm360_campaign_creative AS (
   SELECT DISTINCT placement AS cm360_campaign_name,creative_name AS cm360_creative_name from {{ source(cm360_source_name, cm360_table_name) }}
@@ -107,8 +107,7 @@ SELECT *,    CASE
         ELSE 'Dv360'
     END AS publisher,
     REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
-    CASE WHEN 
-         WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(7)] 
+    CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(7)] 
          ELSE 'Other' END AS creative_descr,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(5)] 
          
