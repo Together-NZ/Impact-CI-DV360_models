@@ -1,5 +1,5 @@
 {% macro dv360_standard(source_name, table_name,cm360_source_name,cm360_table_name) %}
-WITH dedupllicate_data AS (
+WITH deduplicate_data AS (
     SELECT
         -- select dv360 standard data
         JSON_VALUE(data, "$.Advertiser Currency") AS advertiser_currency,
@@ -8,6 +8,7 @@ WITH dedupllicate_data AS (
         SAFE_CAST(JSON_VALUE(data, "$.Clicks") AS INT64) as clicks,
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['Complete Views (Video)']") AS INT64) AS video_completion,
         JSON_VALUE(data, "$.Creative") AS creative_name,
+        JSON_VALUE(data, "$.Creative ID") AS creative_id,
         FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))) AS date, -- Convert date format
         SAFE_CAST(JSON_EXTRACT_SCALAR(data, "$['First-Quartile Views (Video)']") AS INT64) AS video_25_completion,
         JSON_VALUE(data, "$.Floodlight Activity ID") AS floodlight_activity_id,
@@ -30,18 +31,28 @@ WITH dedupllicate_data AS (
                 FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
-                JSON_VALUE(data, "$.Creative"),
+                JSON_VALUE(data, "$.Creative ID"),
                 JSON_VALUE(data, "$.Floodlight Activity ID")
             ORDER BY 
                 _sdc_extracted_at DESC -- Keep the record with the highest revenue
         ) AS row_num
     FROM
         {{ source(source_name, table_name) }}),
+creative_name_update AS (
+    SELECT creative_name,creative_id ROW_NUMBER() OVER (
+        PARTITION BY _sdc_extracted_at DESC
+    ) AS row_num
+    FROM deduplicate_data
+),
+creative_name_update_clean AS (
+    SELECT creative_name,creative_id FROM creative_name_update
+    WHERE row_num = 1
+),
 campaign_name_update AS (
    SELECT campaign_name, campaign_id, ROW_NUMBER() OVER (
     PARTITION BY campaign_id ORDER BY _sdc_extracted_at DESC
    ) AS row_num
-   FROM dedupllicate_data
+   FROM deduplicate_data
 ),
 campaign_name_update_clean AS (
     SELECT campaign_name,campaign_id FROM campaign_name_update 
@@ -57,19 +68,22 @@ SELECT *except(campaign_name) ,
         ELSE 'Other'
     END AS media_format,
 
-FROM dedupllicate_data  
+FROM deduplicate_data  
 WHERE row_num = 1),
 no_creative_changed AS (
 SELECT campaign_id.*, campaign_name FROM 
 final_campaign_id AS campaign_id LEFT JOIN 
 campaign_name_update_clean ON campaign_id.campaign_id=campaign_name_update_clean.campaign_id
 ),
+creative_name_update AS (
+    SELECT reference.*, creative,creative_name FROM no_creative_changed AS reference LEFT JOIN creative_name_update_clean ON reference.creative_id=creative_name_update_clean.creative_id
+),
 cm360_campaign_creative AS (
   SELECT DISTINCT placement AS cm360_campaign_name,creative_name AS cm360_creative_name from {{ source(cm360_source_name, cm360_table_name) }}
 ),
 joining AS (
   SELECT source.*, cm360_creative_name
-  FROM no_creative_changed AS source LEFT JOIN cm360_campaign_creative AS reference ON
+  FROM creative_name_update AS source LEFT JOIN cm360_campaign_creative AS reference ON
   source.campaign_name = reference.cm360_campaign_name
 ),
 basic_result AS (
@@ -93,17 +107,14 @@ SELECT *,    CASE
         ELSE 'Dv360'
     END AS publisher,
     REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
-    CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
-         THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-1)] 
+    CASE WHEN 
          WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(7)] 
          ELSE 'Other' END AS creative_descr,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(5)] 
-         WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
-         THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-3)] 
+         
          ELSE 'Other' END AS ad_format_detail,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(6)] 
-         WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
-         THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-2)] 
+         
          ELSE 'Other' END AS ad_format,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
         ELSE SPLIT(campaign_name,'_')[SAFE_OFFSET(1)] END AS campaign_descr FROM basic_result

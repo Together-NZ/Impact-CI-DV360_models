@@ -45,6 +45,16 @@ campaign_name_update AS (
     SELECT s.* EXCEPT(campaign_name),naming_matching.campaign_name FROM parsed_data AS s
     LEFT JOIN campaign_name_matching AS naming_matching ON s.campaign_id=naming_matching.campaign_id
 ),
+creative_name_matching AS (
+    SELECT creative_name,creative_id. ROW_NUMBER() OVER (PARTITION BY _sdc_extracted_at DESC) AS row_num FROM parsed_data
+),
+creative_name_update_clean AS (
+    SELECT creative_name,creative_id FROM creative_name_matching
+    WHERE row_num = 1
+),
+joining AS (
+    SELECT reference.* EXCEPT(creative_name),creative_name_update_clean.creative_name FROM parsed_data AS reference LEFT JOIN creative_name_update_clean ON reference.creative_id=creative_name_update_clean.creative_id   
+),
 cm360_campaign_creative AS (
                 SELECT DISTINCT placement AS cm360_campaign_name,
                 creative_name AS cm360_creative_name FROM {{ source(cm360_source_name, cm360_table_name) }}
@@ -52,7 +62,7 @@ cm360_campaign_creative AS (
 ),
 creative_name_joining AS (
     SELECT source.*,cm360_creative_name
-    FROM campaign_name_update AS source LEFT JOIN cm360_campaign_creative AS reference ON
+    FROM joining AS source LEFT JOIN cm360_campaign_creative AS reference ON
     source.campaign_name = reference.cm360_campaign_name
 ),
 update_creative_name AS (
@@ -91,17 +101,14 @@ SELECT
     'Youtube Video' AS media_format,
 
     REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
-    CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
-         THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-1)] 
+    CASE  
          WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(7)] 
          ELSE 'Other' END AS creative_descr,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(5)] 
-         WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
-         THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-3)] 
+         
          ELSE 'Other' END AS ad_format_detail,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(6)] 
-         WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) < 8 AND ARRAY_LENGTH(SPLIT(creative_name, '_')) > 1  
-         THEN SPLIT(creative_name, '_')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(creative_name, '_'))-2)] 
+         
          ELSE 'Other' END AS ad_format,
     CASE WHEN ARRAY_LENGTH(SPLIT(campaign_name,'_')) <=1 THEN 'Other'
         ELSE SPLIT(campaign_name,'_')[SAFE_OFFSET(1)] END AS campaign_descr,
