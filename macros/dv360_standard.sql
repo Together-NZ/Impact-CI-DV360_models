@@ -31,7 +31,6 @@ WITH deduplicate_data AS (
                 FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
-                JSON_VALUE(data, "$.Creative ID"),
                 JSON_VALUE(data, "$.Creative"),
                 JSON_VALUE(data, "$.Floodlight Activity ID")
             ORDER BY 
@@ -80,17 +79,29 @@ creative_name_update AS (
     SELECT reference.* EXCEPT(creative_name),creative_name_update_clean.creative_name FROM no_creative_changed AS reference LEFT JOIN creative_name_update_clean ON reference.creative_id=creative_name_update_clean.creative_id
 ),
 cm360_campaign_creative AS (
-  SELECT DISTINCT placement AS cm360_campaign_name,creative_name AS cm360_creative_name from {{ source(cm360_source_name, cm360_table_name) }}
+  SELECT 'NZD' AS advertiser_currency,'0' AS cm360_post_click_revenue,'0' AS cm360_post_view_revenue,SUM(clicks) AS clicks,
+  SUM(video_completion) AS video_completion,dv360_creative_id AS creative_id,SAFE_CAST(date AS STRING) AS date,SUM(video_25_completion) AS video_25_completion, ' ' AS floodlight_activity_id,'Unknown' AS floodlight_activity_name,sum(impressions) AS impressions,
+  placement_id AS campaign_id,' ' as campaign_status,dv360_line_item AS line_item,SAFE_CAST(' ' AS TIMESTAMP) AS _sdc_extracted_at,SAFE_CAST(dv360_line_item_id AS STRING) 
+  AS line_item_id,SUM(video_50_completion) AS video_50_completion, '0' as  post_click_conversions, '0' as post_view_conversions,SUM(dv360_cost) AS media_cost,SUM(video_75_completion) AS video_75_completion, SUM(total_conversions) AS total_conversions, 1 as row_num,
+  ' ' as media_format,placement AS campaign_name,creative_name AS creative_name
+   from {{ source(cm360_source_name, cm360_table_name) }}
+   WHERE placement IN (
+    SELECT DISTINCT campaign_name FROM creative_name_update
+   )
+   GROUP BY advertiser_currency,dv360_creative_id,date,floodlight_activity_id,floodlight_activity_name,placement_id,campaign_status,dv360_line_item,_sdc_extracted_at,dv360_line_item_id,media_format,placement,creative_name 
+),
+remove_360 AS (
+    SELECT * FROM creative_name_update WHERE campaign_name NOT IN (
+        SELECT DISTINCT campaign_name FROM cm360_campaign_creative
+    )
 ),
 joining AS (
-  SELECT source.*, cm360_creative_name
-  FROM creative_name_update AS source LEFT JOIN cm360_campaign_creative AS reference ON
-  source.campaign_name = reference.cm360_campaign_name
+    (SELECT * FROM remove_360) 
+    UNION ALL
+    (SELECT * FROM cm360_campaign_creative)
 ),
 basic_result AS (
-SELECT * except(creative_name,cm360_creative_name),
-CASE WHEN cm360_creative_name IS NOT NULL
-THEN cm360_creative_name ELSE creative_name END AS creative_name FROM joining)
+SELECT *  FROM joining)
 SELECT *,    CASE 
         WHEN LOWER(campaign_name) LIKE '%nzme%' OR LOWER(creative_name) LIKE '%nzme%' THEN 'Nzme'
         WHEN LOWER(campaign_name) LIKE '%dg%' OR LOWER(campaign_name) LIKE '%demand gen%' OR (LOWER(campaign_name) LIKE '%demand%' 
