@@ -83,7 +83,7 @@ cm360_campaign_creative AS (
   SUM(video_completion) AS video_completion,dv360_creative_id AS creative_id,SAFE_CAST(date AS STRING) AS date,SUM(video_25_completion) AS video_25_completion, ' ' AS floodlight_activity_id,'Unknown' AS floodlight_activity_name,sum(impressions) AS impressions,
   placement_id AS campaign_id,' ' as campaign_status,dv360_line_item AS line_item,SAFE_CAST(' ' AS TIMESTAMP) AS _sdc_extracted_at,SAFE_CAST(dv360_line_item_id AS STRING) 
   AS line_item_id,SUM(video_50_completion) AS video_50_completion, '0' as  post_click_conversions, '0' as post_view_conversions,SUM(dv360_cost) AS media_cost,SUM(video_75_completion) AS video_75_completion, SUM(total_conversions) AS total_conversions, 1 as row_num,
-  ' ' as media_format,placement AS campaign_name,creative_name AS creative_name
+  ' ' as media_format,placement AS campaign_name,creative_name AS creative_name, SUM(video_views) AS video_views
    from {{ source(cm360_source_name, cm360_table_name) }}
    WHERE placement IN (
     SELECT DISTINCT campaign_name FROM creative_name_update
@@ -96,7 +96,7 @@ remove_360 AS (
     )
 ),
 joining AS (
-    (SELECT * FROM remove_360) 
+    (SELECT * , video_25_completion AS video_views FROM remove_360) 
     UNION ALL
     (SELECT * FROM cm360_campaign_creative)
 ),
