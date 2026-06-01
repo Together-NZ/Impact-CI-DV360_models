@@ -31,7 +31,6 @@ WITH deduplicate_data AS (
                 FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
-                JSON_VALUE(data, "$.Creative"),
                 JSON_VALUE(data, "$.Creative ID"),
                 JSON_VALUE(data, "$.Floodlight Activity ID")
             ORDER BY 
