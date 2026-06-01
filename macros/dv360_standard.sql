@@ -28,11 +28,17 @@ WITH deduplicate_data AS (
         SAFE_CAST(JSON_VALUE(data, "$.Total Conversions") AS FLOAT64) AS conversions,
         ROW_NUMBER() OVER (
             PARTITION BY 
-                FORMAT_DATE('%Y-%m-%d', safe.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))), -- Use converted date
+                FORMAT_DATE('%Y-%m-%d', SAFE.PARSE_DATE('%Y/%m/%d', JSON_VALUE(data, "$.Date"))),
                 JSON_VALUE(data, "$.Insertion Order ID"),
                 JSON_VALUE(data, "$.Line Item ID"),
-                JSON_VALUE(data, "$.Creative ID"),
-                JSON_VALUE(data, "$.Floodlight Activity ID")
+                COALESCE(
+                NULLIF(JSON_VALUE(data, "$.Creative ID"), ''),
+                JSON_VALUE(data, "$.Creative")
+                ),
+                COALESCE(
+                NULLIF(JSON_VALUE(data, "$.Floodlight Activity ID"), ''),
+                JSON_VALUE(data, "$.Floodlight Activity Name")
+                )
             ORDER BY 
                 _sdc_extracted_at DESC -- Keep the record with the highest revenue
         ) AS row_num
