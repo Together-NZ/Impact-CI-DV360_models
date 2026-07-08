@@ -120,8 +120,8 @@ SELECT
 FROM
     update_creative_name
 WHERE
-    row_num = 1 and campaign_name in (
-        SELECT DISTINCT campaign_name FROM {{ref(dv360_standard_name)}}
+    row_num = 1 and campaign_id in (
+        SELECT DISTINCT campaign_id FROM {{ref(dv360_standard_name)}}
     )),
 youtube_conversion AS (
     SELECT * FROM {{ref(dv360_standard_name)}} WHERE campaign_name IN (
