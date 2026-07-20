@@ -152,6 +152,7 @@ conversion_joining AS (
     '' AS ad_format_detail,
     '' AS ad_format,
     campaign_descr,
+    'DV360' AS platform,
     conversions as conversions,
     SAFE_CAST(floodlight_activity_name AS STRING) as floodlight_activity,
     SAFE_CAST(floodlight_activity_id AS STRING) AS floodlight_activity_id
