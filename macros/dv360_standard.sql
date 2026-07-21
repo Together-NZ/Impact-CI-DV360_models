@@ -124,7 +124,6 @@ SELECT *,    CASE
         WHEN LOWER(campaign_name) LIKE '%stuff%' OR LOWER(creative_name) LIKE '%stuff%' THEN 'Stuff'
         ELSE 'Dv360'
     END AS publisher,
-    'DV360' AS platform,
     REGEXP_EXTRACT(line_item, r'PLATFORM_([^_]+)') AS audience_name,
     CASE WHEN ARRAY_LENGTH(SPLIT(creative_name, '_')) >= 8 THEN SPLIT(creative_name, '_')[SAFE_OFFSET(7)] 
          ELSE 'Other' END AS creative_descr,
